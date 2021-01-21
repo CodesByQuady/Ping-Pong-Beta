@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<title>Pong</title>
+<meta charset="utf-8">
+</head>
+<body>
+<canvas id="pong" width=600 height=400></canvas>
+
+<style>
+
+canvas { body-align : center }
+</style>
+<script>
+alert("Ping Pong Game. You're in the red corner, use your mouse to control your side of the ping pong table.");
+
+const cvs = document.getElementById("pong");
+const ctx = cvs.getContext("2d");
+// draw function
+function drawRect(x,y,w,h,color){
+	ctx.fillStyle = color;
+	ctx.fillRect(x,y,w,h);
+}
+// User Paddle
+const user = {
+	x :0,
+	y : cvs.height/2 - 100/2,
+	// using the speedX and Y variables, it allows the user to control the game piece.
+	speedX : 0,
+	speedY : 0,
+	width : 10,
+	height : 100,
+	color : "red",
+	score : 0
+}
+// User Controls
+// Lets user play using the mouse.
+
+cvs.addEventListener("mousemove",movePaddle)
+
+
+function movePaddle(evt){
+	let rect = cvs.getBoundingClientRect();
+	
+	user.y = evt.clientY - rect.top - user.height/2;
+	
+}
+
+// CPU Paddle
+const com = {
+	x : cvs.width - 10,
+	y : cvs.height/2 - 100/2,
+	width : 10,
+	height : 100,
+	color : "blue",
+	score : 0
+}
+// game ball logic
+const ball = {
+	x : cvs.width/2,
+	y : cvs.height/2,
+	radius : 10,
+	speed : 5,
+	velocityX : 5,
+	velocityY : 5,
+	color : 'white'
+}
+
+const net = {
+	x : cvs.width/2 - 1,
+	y : 0,
+	width : 2,
+	height : 10,
+	color : "white"
+}
+function drawNet(){
+	for (let i = 0; i <= cvs.height; i +=15){
+		drawRect(net.x,net.y + i, net.width, net.height, net.color);
+	}
+}
+
+
+// draw ball
+function drawBall(x,y,r,color){
+	ctx.fillStyle = color;
+	ctx.beginPath();
+	ctx.arc(x,y,r,0,Math.PI*2,false);
+	ctx.closePath();
+	ctx.fill();
+	
+}
+// draw text
+function drawText(text,x,y,color){
+	ctx.fillStyle = color;
+	ctx.font = "45px fantasy";
+	ctx.fillText(text,x,y);
+}
+// Render game
+function render(){
+	// Clears canvas
+	drawRect(0,0, cvs.width, cvs.height, "black");
+	// The net
+	drawNet();
+	
+	// draw score
+	drawText(user.score,cvs.width/4,cvs.height/5,"red");
+	drawText(com.score,3*cvs.width/4,cvs.height/5,"blue");
+	// draw the game paddles
+	drawRect(user.x,user.y,user.width,user.height,user.color);
+	drawRect(com.x,com.y,com.width,com.height,com.color);
+	// draws the ball
+	drawBall(ball.x,ball.y,ball.radius,ball.color);
+}
+// Hit Detection
+function HD(b,p){
+	b.top = b.y - b.radius;
+	b.bottom = b.y + b.radius;
+	b.left = b.x - b.radius;
+	b.right = b.x + b.radius;
+	
+	p.top = p.y;
+	p.bottom = p.y + p.height;
+	p.left = p.x;
+	p.right = p.x + p.width;
+	
+	return b.right > p.left && b.bottom > p.top && b.left < p.right && b.top < p.bottom;
+	
+}
+// Reset game ball.
+function resetBall(){
+	ball.x = cvs.width/2;
+	ball.y = cvs.height/2;
+	ball.speed = 5;
+	ball.velocityX = -ball.velocityX;
+	
+}
+// update game area
+function update(){
+	ball.x += ball.velocityX;
+	ball.y += ball.velocityY;
+	// cpu control
+	let computerLevel = 0.1
+	com.y += (ball.y - (com.y + com.height/2)) + computerLevel;
+	// Ball will bounce if it hits the bottom of the screen.
+	if(ball.y + ball.radius > cvs.height || ball.y - ball.radius < 0){
+		ball.velocityY = - ball.velocityY;
+	}
+	// Just learned that the "?" can be used for if else staements.
+	// "user" is the true value, the "com" is the false value. Player 1 and Player 2.
+	let player = (ball.x < cvs.width/2) ? user : com;
+	
+	if(HD(ball,player)){
+		// adds a spin on the ball.
+		let collidePoint = ball.y - (player.y + player.height/2);
+		collidePoint = collidePoint/(player.height/2);
+		let angleRad = collidePoint * Math.PI/4;
+		// X direction of the ball when hit by cpu
+		let direction = (ball.x < cvs.width/2) ? 1 : -1;
+		
+		// Speed changers
+		ball.velocityX = direction * ball.speed * Math.cos(angleRad);
+		ball.velocityY = direction * ball.speed * Math.sin(angleRad);
+		// Ball Gets Faster As The Game Goes on.
+		ball.speed += 0.6;
+	}
+	if(ball.x - ball.radius < 0){
+		// CPU scores
+		com.score++;
+		resetBall();
+	} else if(ball.x + ball.radius > cvs.width) {
+		//user scores
+		user.score++;
+		resetBall();
+	}
+	
+}
+// Game render function.
+function game(){
+	update();
+	render();
+	
+}
+const FPS = 50;
+setInterval(game,1000/FPS);
+
+
+</script>
+</body>
+</html>
